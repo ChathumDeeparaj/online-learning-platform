@@ -102,4 +102,37 @@ User.prototype.toJSON = function() {
   return values;
 };
 
+// Review-related methods
+User.prototype.getReviewStats = async function() {
+  const Review = require('./Review');
+  const stats = await Review.findAll({
+    where: { userId: this.id },
+    attributes: [
+      [sequelize.fn('COUNT', sequelize.col('id')), 'totalReviews'],
+      [sequelize.fn('AVG', sequelize.col('rating')), 'averageRating'],
+      [sequelize.fn('SUM', sequelize.col('helpfulVotes')), 'totalHelpfulVotes']
+    ],
+    raw: true
+  });
+  return stats[0] || { totalReviews: 0, averageRating: 0, totalHelpfulVotes: 0 };
+};
+
+User.prototype.hasReviewedCourse = async function(courseId) {
+  const Review = require('./Review');
+  const review = await Review.findOne({
+    where: { userId: this.id, courseId: courseId }
+  });
+  return !!review;
+};
+
+User.prototype.getCourseReview = async function(courseId) {
+  const Review = require('./Review');
+  return await Review.findOne({
+    where: { userId: this.id, courseId: courseId },
+    include: [
+      { model: require('./Course'), as: 'course' }
+    ]
+  });
+};
+
 module.exports = User;

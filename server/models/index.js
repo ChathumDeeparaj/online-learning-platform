@@ -3,6 +3,7 @@ const User = require('./User');
 const Course = require('./Course');
 const Enrollment = require('./Enrollment');
 const Review = require('./Review');
+const Payment = require('./Payment');
 
 // Define associations
 User.hasMany(Enrollment, {
@@ -87,9 +88,30 @@ Review.belongsTo(User, {
   as: 'responder'
 });
 
+// Enhanced User-Course relationship through Reviews
+User.belongsToMany(Course, {
+  through: Review,
+  foreignKey: 'userId',
+  otherKey: 'courseId',
+  as: 'reviewedCourses',
+  constraints: false
+});
+
+Course.belongsToMany(User, {
+  through: Review,
+  foreignKey: 'courseId',
+  otherKey: 'userId',
+  as: 'reviewers',
+  constraints: false
+});
+
 // Sync database
 const syncDatabase = async (force = false) => {
   try {
+    // Drop Payment table first if force is true to avoid FK constraint issues
+    if (force) {
+      await Payment.drop({ cascade: true }).catch(() => {});
+    }
     await sequelize.sync({ force });
     console.log('✅ Database synchronized successfully.');
     
@@ -130,5 +152,6 @@ module.exports = {
   Course,
   Enrollment,
   Review,
+  Payment,
   syncDatabase
 };

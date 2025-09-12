@@ -13,6 +13,7 @@ const Payment = sequelize.define('Payment', {
   userId: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    field: 'user_id',
     references: {
       model: User,
       key: 'id'
@@ -21,6 +22,7 @@ const Payment = sequelize.define('Payment', {
   courseId: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    field: 'course_id',
     references: {
       model: Course,
       key: 'id'
@@ -29,11 +31,13 @@ const Payment = sequelize.define('Payment', {
   stripeSessionId: {
     type: DataTypes.STRING,
     allowNull: false,
-    unique: true
+    unique: true,
+    field: 'stripe_session_id'
   },
   stripePaymentIntentId: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
+    field: 'stripe_payment_intent_id'
   },
   amount: {
     type: DataTypes.DECIMAL(10, 2),
@@ -51,15 +55,18 @@ const Payment = sequelize.define('Payment', {
   },
   paymentMethod: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
+    field: 'payment_method'
   },
   receiptUrl: {
     type: DataTypes.STRING,
-    allowNull: true
+    allowNull: true,
+    field: 'receipt_url'
   },
   refundAmount: {
     type: DataTypes.DECIMAL(10, 2),
-    defaultValue: 0.00
+    defaultValue: 0.00,
+    field: 'refund_amount'
   },
   metadata: {
     type: DataTypes.JSON,
@@ -67,24 +74,26 @@ const Payment = sequelize.define('Payment', {
   },
   paidAt: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: true,
+    field: 'paid_at'
   },
   refundedAt: {
     type: DataTypes.DATE,
-    allowNull: true
+    allowNull: true,
+    field: 'refunded_at'
   }
 }, {
   tableName: 'payments',
   timestamps: true,
   indexes: [
     {
-      fields: ['userId']
+      fields: ['user_id']
     },
     {
-      fields: ['courseId']
+      fields: ['course_id']
     },
     {
-      fields: ['stripeSessionId']
+      fields: ['stripe_session_id']
     },
     {
       fields: ['status']

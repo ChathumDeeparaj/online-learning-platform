@@ -4,7 +4,7 @@ const router = express.Router();
 const bodyParser = require('body-parser');
 const paymentController = require('../controllers/paymentController');
 const webhookController = require('../controllers/webhookController');
-const authMiddleware = require('../middleware/auth');
+const { authenticate, authorize } = require('../middleware/auth');
 const adminMiddleware = require('../middleware/adminMiddleware');
 const { body, param, query } = require('express-validator');
 const { validationResult } = require('express-validator');
@@ -26,7 +26,7 @@ const validateRequest = (req, res, next) => {
 router.post('/webhook', webhookController.handleStripeWebhook);
 
 // User routes (require authentication)
-router.use(authMiddleware); // Apply auth middleware to all routes below
+router.use(authenticate); // Apply auth middleware to all routes below
 
 // Create checkout session for course purchase
 router.post('/checkout/:courseId',

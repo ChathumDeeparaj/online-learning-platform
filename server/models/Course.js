@@ -142,4 +142,49 @@ Course.prototype.hasAvailableSlots = async function() {
   return enrollmentCount < this.maxStudents;
 };
 
+// Review-related methods
+Course.prototype.getReviewStats = async function() {
+  const Review = require('./Review');
+  const stats = await Review.findAll({
+    where: { courseId: this.id, isVisible: true },
+    attributes: [
+      [sequelize.fn('COUNT', sequelize.col('id')), 'totalReviews'],
+      [sequelize.fn('AVG', sequelize.col('rating')), 'averageRating'],
+      [sequelize.fn('SUM', sequelize.col('helpfulVotes')), 'totalHelpfulVotes']
+    ],
+    raw: true
+  });
+  return stats[0] || { totalReviews: 0, averageRating: 0, totalHelpfulVotes: 0 };
+};
+
+Course.prototype.getReviews = async function(options = {}) {
+  const Review = require('./Review');
+  const User = require('./User');
+  
+  const defaultOptions = {
+    where: { courseId: this.id, isVisible: true },
+    include: [
+      { model: User, as: 'user', attributes: ['id', 'firstName', 'lastName', 'profileImage'] }
+    ],
+    order: [['helpfulVotes', 'DESC'], ['reviewDate', 'DESC']],
+    limit: 10
+  };
+  
+  return await Review.findAll({ ...defaultOptions, ...options });
+};
+
+Course.prototype.getTopReviews = async function(limit = 5) {
+  return await this.getReviews({ 
+    limit,
+    order: [['helpfulVotes', 'DESC'], ['rating', 'DESC']]
+  });
+};
+
+Course.prototype.getRecentReviews = async function(limit = 5) {
+  return await this.getReviews({ 
+    limit,
+    order: [['reviewDate', 'DESC']]
+  });
+};
+
 module.exports = Course;
