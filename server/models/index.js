@@ -2,6 +2,7 @@ const { sequelize, testConnection } = require('../config/database');
 const User = require('./User');
 const Course = require('./Course');
 const Enrollment = require('./Enrollment');
+const Review = require('./Review');
 
 // Define associations
 User.hasMany(Enrollment, {
@@ -52,6 +53,27 @@ User.hasMany(Course, {
   as: 'instructedCourses'
 });
 
+// Review relationships
+Review.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
+});
+
+Review.belongsTo(Course, {
+  foreignKey: 'courseId',
+  as: 'course'
+});
+
+User.hasMany(Review, {
+  foreignKey: 'userId',
+  as: 'reviews'
+});
+
+Course.hasMany(Review, {
+  foreignKey: 'courseId',
+  as: 'reviews'
+});
+
 // Sync database
 const syncDatabase = async (force = false) => {
   try {
@@ -94,5 +116,6 @@ module.exports = {
   User,
   Course,
   Enrollment,
+  Review,
   syncDatabase
 };

@@ -11,6 +11,7 @@ const bodyParser = require('body-parser');
 const { testConnection, syncDatabase } = require('./models');
 const { specs, swaggerUi, swaggerOptions } = require('./config/swagger');
 const errorHandler = require('./middleware/errorHandler');
+const security = require('./middleware/security');
 const {
   generalLimiter,
   authLimiter,
@@ -19,7 +20,7 @@ const {
   corsOptions,
   sanitizeInput,
   requestLogger
-} = require('./middleware/security');
+} = security;
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -28,6 +29,7 @@ const enrollmentRoutes = require('./routes/enrollments');
 const userRoutes = require('./routes/users');
 const dashboardRoutes = require('./routes/dashboard');
 const paymentRoutes = require('./routes/payment');
+const reviewRoutes = require('./routes/reviews');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -111,6 +113,7 @@ app.use('/api/enrollments', apiLimiter, enrollmentRoutes);
 app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/dashboard', apiLimiter, dashboardRoutes);
 app.use('/api/payments', apiLimiter, paymentRoutes);
+app.use('/api/reviews', apiLimiter, reviewRoutes);
 
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
