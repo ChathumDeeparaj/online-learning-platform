@@ -3,6 +3,22 @@ const User = require('./User');
 const Course = require('./Course');
 const Enrollment = require('./Enrollment');
 
+// Analytics models
+const UserActivity = require('./UserActivity');
+const UserSession = require('./UserSession');
+const PageView = require('./PageView');
+const UserEngagement = require('./UserEngagement');
+
+const CourseAnalytics = require('./CourseAnalytics');
+const CourseEngagement = require('./CourseEngagement');
+const CourseCompletion = require('./CourseCompletion');
+const CourseRating = require('./CourseRating');
+
+const SystemMetrics = require('./SystemMetrics');
+const ApiLog = require('./ApiLogs');
+const ErrorLog = require('./ErrorLogs');
+const PerformanceMetrics = require('./PerformanceMetrics');
+
 // Define associations
 User.hasMany(Enrollment, {
   foreignKey: 'userId',
@@ -52,6 +68,43 @@ User.hasMany(Course, {
   as: 'instructedCourses'
 });
 
+// === Analytics associations ===
+// User activity & session
+User.hasMany(UserActivity, { foreignKey: 'userId', as: 'activities' });
+User.hasMany(UserSession, { foreignKey: 'userId', as: 'sessions' });
+User.hasOne(UserEngagement, { foreignKey: 'userId', as: 'engagement' });
+
+UserActivity.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+UserSession.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+UserEngagement.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// Page views
+User.hasMany(PageView, { foreignKey: 'userId', as: 'pageViews' });
+PageView.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// Course analytics
+Course.hasMany(CourseAnalytics, { foreignKey: 'courseId', as: 'analytics' });
+Course.hasMany(CourseEngagement, { foreignKey: 'courseId', as: 'engagement' });
+Course.hasMany(CourseRating, { foreignKey: 'courseId', as: 'ratings' });
+CourseAnalytics.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
+CourseEngagement.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
+CourseRating.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
+
+// Course completion associations via Enrollment
+Enrollment.hasOne(CourseCompletion, { foreignKey: 'enrollmentId', as: 'completion' });
+CourseCompletion.belongsTo(Enrollment, { foreignKey: 'enrollmentId', as: 'enrollment' });
+
+// Ratings tie to users as well
+User.hasMany(CourseRating, { foreignKey: 'userId', as: 'courseRatings' });
+CourseRating.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+
+// Link activities to enrollments/entities when applicable
+Enrollment.hasMany(UserActivity, { foreignKey: 'entityId', as: 'activities' });
+
+// System & performance metrics
+// no direct FK relationships required but export for usage
+
+
 // Sync database
 const syncDatabase = async (force = false) => {
   try {
@@ -94,5 +147,18 @@ module.exports = {
   User,
   Course,
   Enrollment,
+  // Analytics models
+  UserActivity,
+  UserSession,
+  PageView,
+  UserEngagement,
+  CourseAnalytics,
+  CourseEngagement,
+  CourseCompletion,
+  CourseRating,
+  SystemMetrics,
+  ApiLog,
+  ErrorLog,
+  PerformanceMetrics,
   syncDatabase
 };
