@@ -4,6 +4,31 @@
  */
 module.exports = {
   up: async (queryInterface, Sequelize) => {
+    const dbName = queryInterface.sequelize.config.database;
+
+    const addIndexIfNotExists = async (tableName, indexName, fields) => {
+      const indexes = await queryInterface.showIndex(tableName);
+      const indexExists = indexes.some(index => index.name === indexName);
+      if (!indexExists) {
+        await queryInterface.addIndex(tableName, fields, { name: indexName });
+      }
+    };
+
+    const addConstraintIfNotExists = async (tableName, constraintName, options) => {
+      const constraints = await queryInterface.sequelize.query(
+        `SELECT * FROM information_schema.table_constraints WHERE constraint_schema = '${dbName}' AND table_name = '${tableName}' AND constraint_name = '${constraintName}';`,
+        { type: Sequelize.QueryTypes.SELECT }
+      );
+      if (constraints.length === 0) await queryInterface.addConstraint(tableName, options);
+    };
+
+    const addColumnIfNotExists = async (tableName, columnName, definition) => {
+      const tableDescription = await queryInterface.describeTable(tableName);
+      if (!tableDescription[columnName]) {
+        await queryInterface.addColumn(tableName, columnName, definition);
+      }
+    };
+
     // User engagement (one row per user)
     await queryInterface.createTable('user_engagements', {
       id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
@@ -13,7 +38,7 @@ module.exports = {
       courses_completed: { type: Sequelize.INTEGER, defaultValue: 0 },
       created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
       updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') }
-    });
+    }, { ifNotExists: true });
 
     // User sessions
     await queryInterface.createTable('user_sessions', {
@@ -25,7 +50,7 @@ module.exports = {
       user_agent: { type: Sequelize.STRING },
       created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
       updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') }
-    });
+    }, { ifNotExists: true });
 
     // Page views
     await queryInterface.createTable('page_views', {
@@ -34,9 +59,9 @@ module.exports = {
       path: { type: Sequelize.STRING, allowNull: false },
       ip_address: { type: Sequelize.STRING },
       created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') }
-    });
-    await queryInterface.addIndex('page_views', ['path']);
-    await queryInterface.addIndex('page_views', ['user_id']);
+    }, { ifNotExists: true });
+    await addIndexIfNotExists('page_views', 'page_views_path', ['path']);
+    await addIndexIfNotExists('page_views', 'page_views_user_id', ['user_id']);
 
     // User activities (events)
     await queryInterface.createTable('user_activities', {
@@ -47,9 +72,9 @@ module.exports = {
       entity_id: { type: Sequelize.INTEGER },
       details: { type: Sequelize.JSON },
       created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') }
-    });
-    await queryInterface.addIndex('user_activities', ['user_id', 'created_at'], { name: 'idx_user_activities_user_timestamp' });
-    await queryInterface.addIndex('user_activities', ['activity_type', 'created_at'], { name: 'idx_user_activities_type_timestamp' });
+    }, { ifNotExists: true });
+    await addIndexIfNotExists('user_activities', 'idx_user_activities_user_timestamp', ['user_id', 'created_at']);
+    await addIndexIfNotExists('user_activities', 'idx_user_activities_type_timestamp', ['activity_type', 'created_at']);
 
     // Course analytics (daily)
     await queryInterface.createTable('course_analytics', {
@@ -59,9 +84,9 @@ module.exports = {
       views: { type: Sequelize.INTEGER, defaultValue: 0 },
       enrollments: { type: Sequelize.INTEGER, defaultValue: 0 },
       completion_rate: { type: Sequelize.FLOAT, defaultValue: 0 }
-    });
-    await queryInterface.addConstraint('course_analytics', { fields: ['course_id', 'date'], type: 'unique', name: 'uniq_course_date' });
-    await queryInterface.addIndex('course_analytics', ['course_id', 'date'], { name: 'idx_course_analytics_course_date' });
+    }, { ifNotExists: true });
+    await addConstraintIfNotExists('course_analytics', 'uniq_course_date', { fields: ['course_id', 'date'], type: 'unique', name: 'uniq_course_date' });
+    await addIndexIfNotExists('course_analytics', 'idx_course_analytics_course_date', ['course_id', 'date']);
 
     // Course engagement (aggregated)
     await queryInterface.createTable('course_engagements', {
@@ -72,7 +97,7 @@ module.exports = {
       average_completion_time: { type: Sequelize.INTEGER, defaultValue: 0 },
       created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
       updated_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') }
-    });
+    }, { ifNotExists: true });
 
     // Course ratings
     await queryInterface.createTable('course_ratings', {
@@ -80,8 +105,10 @@ module.exports = {
       course_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'courses', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       user_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'users', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       rating: { type: Sequelize.INTEGER, allowNull: false }
-    });
-    await queryInterface.addConstraint('course_ratings', { fields: ['course_id', 'user_id'], type: 'unique', name: 'user_course_rating' });
+    }, { ifNotExists: true });
+    await addConstraintIfNotExists('course_ratings', 'user_course_rating', { fields: ['course_id', 'user_id'], type: 'unique', name: 'user_course_rating' });
+    await addColumnIfNotExists('course_ratings', 'created_at', { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') });
+    await addColumnIfNotExists('course_ratings', 'updated_at', { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') });
 
     // Course completion (per enrollment)
     await queryInterface.createTable('course_completions', {
@@ -89,8 +116,10 @@ module.exports = {
       enrollment_id: { type: Sequelize.INTEGER, allowNull: false, unique: true, references: { model: 'enrollments', key: 'id' }, onDelete: 'CASCADE', onUpdate: 'CASCADE' },
       completion_date: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
       time_to_complete: { type: Sequelize.INTEGER }
-    });
-    await queryInterface.addIndex('course_completions', ['completion_date']);
+    }, { ifNotExists: true });
+    await addColumnIfNotExists('course_completions', 'created_at', { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') });
+    await addColumnIfNotExists('course_completions', 'updated_at', { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') });
+    await addIndexIfNotExists('course_completions', 'course_completions_completion_date', ['completion_date']);
 
     // System metrics
     await queryInterface.createTable('system_metrics', {
@@ -98,8 +127,8 @@ module.exports = {
       metric_type: { type: Sequelize.STRING, allowNull: false },
       value: { type: Sequelize.FLOAT, allowNull: false },
       created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') }
-    });
-    await queryInterface.addIndex('system_metrics', ['metric_type', 'created_at'], { name: 'idx_system_metrics_type_timestamp' });
+    }, { ifNotExists: true });
+    await addIndexIfNotExists('system_metrics', 'idx_system_metrics_type_timestamp', ['metric_type', 'created_at']);
 
     // API logs
     await queryInterface.createTable('api_logs', {
@@ -109,11 +138,12 @@ module.exports = {
       status_code: { type: Sequelize.INTEGER, allowNull: false },
       response_time: { type: Sequelize.INTEGER, allowNull: false },
       ip_address: { type: Sequelize.STRING },
-      user_id: { type: Sequelize.INTEGER }
-    });
-    await queryInterface.addIndex('api_logs', ['path']);
-    await queryInterface.addIndex('api_logs', ['status_code']);
-    await queryInterface.addIndex('api_logs', ['user_id']);
+      user_id: { type: Sequelize.INTEGER },
+      created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') }
+    }, { ifNotExists: true });
+    await addIndexIfNotExists('api_logs', 'api_logs_path', ['path']);
+    await addIndexIfNotExists('api_logs', 'api_logs_status_code', ['status_code']);
+    await addIndexIfNotExists('api_logs', 'api_logs_user_id', ['user_id']);
 
     // Error logs
     await queryInterface.createTable('error_logs', {
@@ -123,9 +153,9 @@ module.exports = {
       stack: { type: Sequelize.TEXT },
       context: { type: Sequelize.JSON },
       created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') }
-    });
-    await queryInterface.addIndex('error_logs', ['level']);
-    await queryInterface.addIndex('error_logs', ['created_at']);
+    }, { ifNotExists: true });
+    await addIndexIfNotExists('error_logs', 'error_logs_level', ['level']);
+    await addIndexIfNotExists('error_logs', 'error_logs_created_at', ['created_at']);
 
     // Performance metrics
     await queryInterface.createTable('performance_metrics', {
@@ -134,8 +164,8 @@ module.exports = {
       duration: { type: Sequelize.INTEGER, allowNull: false },
       details: { type: Sequelize.JSON },
       created_at: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') }
-    });
-    await queryInterface.addIndex('performance_metrics', ['metric_name']);
+    }, { ifNotExists: true });
+    await addIndexIfNotExists('performance_metrics', 'performance_metrics_metric_name', ['metric_name']);
   },
 
   down: async (queryInterface, Sequelize) => {

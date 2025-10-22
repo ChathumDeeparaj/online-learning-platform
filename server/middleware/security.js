@@ -1,5 +1,6 @@
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
+const { ApiLog } = require('../models');
 
 // Rate limiting configuration
 const createRateLimit = (windowMs, max, message) => {
@@ -46,12 +47,12 @@ const apiLimiter = createRateLimit(
 const helmetConfig = helmet({
   contentSecurityPolicy: {
     directives: {
-      defaultSrc: ["'self'"],
+      defaultSrc: ["'self'", process.env.CLIENT_URL || 'http://localhost:3000'],
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "https:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:", process.env.CLIENT_URL || 'http://localhost:3000'],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts if needed for dev tools
+      connectSrc: ["'self'", process.env.CLIENT_URL || 'http://localhost:3000', "https://fonts.googleapis.com", "https://fonts.gstatic.com"],
       frameSrc: ["'none'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
@@ -128,26 +129,22 @@ const sanitizeInput = (req, res, next) => {
 };
 
 // Request logging middleware
-const requestLogger = (req, res, next) => {
+const requestLogger = async (req, res, next) => {
   const start = Date.now();
   
   res.on('finish', () => {
     const duration = Date.now() - start;
-    const logData = {
-      method: req.method,
-      url: req.originalUrl,
-      status: res.statusCode,
-      duration: `${duration}ms`,
-      ip: req.ip,
-      userAgent: req.get('User-Agent')
-    };
-    
-    if (req.user) {
-      logData.userId = req.user.id;
-      logData.userRole = req.user.role;
+    // Avoid logging OPTIONS requests or health checks
+    if (req.method !== 'OPTIONS' && req.originalUrl !== '/health') {
+      ApiLog.create({
+        method: req.method,
+        path: req.originalUrl,
+        statusCode: res.statusCode,
+        responseTime: duration,
+        ipAddress: req.ip,
+        userId: req.user ? req.user.id : null,
+      }).catch(err => console.error('Failed to log API request:', err));
     }
-    
-    console.log(JSON.stringify(logData));
   });
   
   next();
