@@ -29,8 +29,11 @@ const userRoutes = require('./routes/users');
 const dashboardRoutes = require('./routes/dashboard');
 const paymentRoutes = require('./routes/payment');
 
+const analyticsRoutes = require('./routes/analytics');
+const { trackActivity } = require('./middleware/analyticsMiddleware');
+
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Trust proxy for rate limiting and IP detection
 app.set('trust proxy', 1);
@@ -44,6 +47,9 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 app.use(requestLogger);
+
+// Analytics middleware
+app.use(trackActivity);
 
 // IMPORTANT: Health check endpoint BEFORE rate limiting
 app.get('/health', (req, res) => {
@@ -69,7 +75,8 @@ app.get('/api', (req, res) => {
       enrollments: '/api/enrollments',
       users: '/api/users',
       dashboard: '/api/dashboard',
-      payments: '/api/payments'
+      payments: '/api/payments',
+      analytics: '/api/analytics'
     },
     features: [
       'JWT Authentication',
@@ -83,7 +90,8 @@ app.get('/api', (req, res) => {
       'Comprehensive Validation',
       'Rate Limiting',
       'Security Headers',
-      'API Documentation'
+      'API Documentation',
+      'Analytics'
     ]
   });
 });
@@ -111,6 +119,7 @@ app.use('/api/enrollments', apiLimiter, enrollmentRoutes);
 app.use('/api/users', apiLimiter, userRoutes);
 app.use('/api/dashboard', apiLimiter, dashboardRoutes);
 app.use('/api/payments', apiLimiter, paymentRoutes);
+app.use('/api/analytics', apiLimiter, analyticsRoutes);
 
 // Serve React app in production
 if (process.env.NODE_ENV === 'production') {
@@ -133,6 +142,9 @@ app.use('/api/*', (req, res) => {
 // Global error handler
 app.use(errorHandler);
 
+const { initializeAnalyticsSocket } = require('./websocket/analyticsSocket');
+const { initializeRealTimeAnalytics } = require('./services/realTimeAnalytics');
+
 // Database connection and server startup
 const startServer = async () => {
   try {
@@ -142,8 +154,15 @@ const startServer = async () => {
     // Sync database models
     await syncDatabase(process.env.FORCE_DB_SYNC === 'true');
     
+    // Create HTTP server
+    const server = require('http').createServer(app);
+    
+    // Initialize real-time analytics and WebSocket
+    initializeRealTimeAnalytics();
+    initializeAnalyticsSocket(server);
+    
     // Start server
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📚 API Documentation: http://localhost:${PORT}/api-docs`);
       console.log(`🏥 Health Check: http://localhost:${PORT}/health`);
