@@ -26,7 +26,7 @@ const validateRequest = (req, res, next) => {
 router.post('/webhook', webhookController.handleStripeWebhook);
 
 // User routes (require authentication)
-router.use(authMiddleware); // Apply auth middleware to all routes below
+router.use(authMiddleware.authenticate); // Apply auth middleware to all routes below
 
 // Create checkout session for course purchase
 router.post('/checkout/:courseId',

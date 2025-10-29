@@ -75,15 +75,17 @@ const corsOptions = {
       'http://127.0.0.1:3001'
     ];
     
+    if (process.env.NODE_ENV !== 'production') {
+      // In development, be more permissive
+      return callback(null, true);
+    }
+    
     if (process.env.NODE_ENV === 'production') {
       // Add production domains
       allowedOrigins.push(
         'https://your-production-domain.com',
         'https://www.your-production-domain.com'
       );
-    } else {
-      // In development, be more permissive
-      return callback(null, true);
     }
     
     if (allowedOrigins.indexOf(origin) !== -1) {

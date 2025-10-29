@@ -58,7 +58,7 @@ const getDashboardStats = async (req, res) => {
       FROM enrollments
       WHERE enrollment_date >= DATE_SUB(NOW(), INTERVAL 6 MONTH)
         AND status = 'active'
-      GROUP BY DATE_FORMAT(enrollment_date, '%Y-%m')
+      GROUP BY month
       ORDER BY month DESC
       LIMIT 6
     `, { type: sequelize.QueryTypes.SELECT });
