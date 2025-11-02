@@ -1,8 +1,3 @@
-// Real-time dashboard endpoint
-router.get('/dashboard', analyticsController.getDashboardStats);
-
-// Custom report generation endpoint
-router.get('/custom-report', analyticsController.customReport);
 const express = require('express');
 const router = express.Router();
 const analyticsController = require('../controllers/analyticsController');
@@ -11,6 +6,11 @@ const { authenticate, authorize } = require('../middleware/auth');
 // All analytics routes should be protected and accessible only by admins.
 router.use(authenticate, authorize('admin'));
 
+// Real-time dashboard endpoint
+router.get('/dashboard', analyticsController.getDashboardStats);
+
+// Custom report generation endpoint
+router.get('/custom-report', analyticsController.customReport);
 
 router.get('/activities', analyticsController.getActivities);
 router.get('/user-engagement', analyticsController.getUserEngagement);
