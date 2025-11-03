@@ -23,7 +23,13 @@
   "author": "Ceylon Dazzling Dev Holding Pvt. Ltd.",
   "license": "MIT",
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@types/jest": "^30.0.0",
+    "concurrently": "^8.2.2",
+    "jest": "^30.2.0",
+    "mock-req-res": "^1.2.1",
+    "sinon": "^21.0.0",
+    "supertest": "^7.1.4",
+    "ws": "^8.18.3"
   },
   "dependencies": {
     "axios": "^1.11.0",

@@ -91,7 +91,9 @@ async function generateUserActivityReport({ startDate, endDate } = {}) {
 // Export report to file (CSV or JSON)
 async function exportReportToFile(data, filename = 'report.json', format = 'json') {
   const reportsDir = path.join(__dirname, '../reports');
-  if (!fs.existsSync(reportsDir)) fs.mkdirSync(reportsDir);
+  if (!fs.existsSync(reportsDir)) {
+    fs.mkdirSync(reportsDir, { recursive: true });
+  }
   let filePath = path.join(reportsDir, filename);
   let fileData;
   if (format === 'csv') {

@@ -80,8 +80,8 @@ const getRevenueAnalytics = async (req, res) => {
   }
 };
 
-// Export enrollment report (JSON or CSV)
 const exportEnrollmentReport = async (req, res) => {
+  console.log('Exporting enrollment report...');
   try {
     const { format = 'json' } = req.query;
     const data = await reportingService.generateEnrollmentReport();

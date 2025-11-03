@@ -1,0 +1,33 @@
+module.exports = {
+  testEnvironment: 'node',
+  rootDir: './',
+  coverageDirectory: 'coverage',
+  collectCoverageFrom: [
+    'services/**/*.js',
+    'controllers/**/*.js',
+    'middleware/**/*.js',
+    'utils/**/*.js',
+    'routes/**/*.js',
+    'websocket/**/*.js',
+    'events/**/*.js',
+  ],
+  testMatch: ['**/tests/**/*.test.js'],
+  coveragePathIgnorePatterns: [
+    '/node_modules/',
+    '/tests/',
+    '/config/',
+    '/models/',
+  ],
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/tests/manual/',
+    '/tests/postman/',
+  ],
+  verbose: true,
+  forceExit: true,
+  clearMocks: true,
+  resetMocks: true,
+  restoreMocks: true,
+  testTimeout: 10000,
+  setupFilesAfterEnv: [],
+};

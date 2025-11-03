@@ -92,11 +92,6 @@ const Payment = sequelize.define('Payment', {
   ]
 });
 
-// Define associations
-Payment.belongsTo(User, { foreignKey: 'userId', as: 'user' });
-Payment.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
 
-User.hasMany(Payment, { foreignKey: 'userId', as: 'payments' });
-Course.hasMany(Payment, { foreignKey: 'courseId', as: 'payments' });
 
 module.exports = Payment;

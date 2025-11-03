@@ -3,6 +3,8 @@ const User = require('./User');
 const Course = require('./Course');
 const Enrollment = require('./Enrollment');
 
+const Payment = require('./Payment');
+
 // Define associations
 User.hasMany(Enrollment, {
   foreignKey: 'userId',
@@ -25,6 +27,13 @@ Enrollment.belongsTo(Course, {
   foreignKey: 'courseId',
   as: 'course'
 });
+
+// Payment associations
+Payment.belongsTo(User, { foreignKey: 'userId', as: 'user' });
+Payment.belongsTo(Course, { foreignKey: 'courseId', as: 'course' });
+
+User.hasMany(Payment, { foreignKey: 'userId', as: 'payments' });
+Course.hasMany(Payment, { foreignKey: 'courseId', as: 'payments' });
 
 // Many-to-many relationship through Enrollment
 User.belongsToMany(Course, {
